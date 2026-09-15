@@ -124,8 +124,11 @@
   }
   updateSummary();
 
-  // ---- تحميل FFmpeg.wasm ----
-  // classWorkerURL يُمرَّر داخل load()، وليس داخل constructor — هذا هو التصحيح الجوهري.
+  // ---- تحميل FFmpeg.wasm من CDN عبر Blob URLs ----
+  // كل ملف (core.js / core.wasm / سكربت الـ Worker الداخلي 814.ffmpeg.js)
+  // يُجلب أولاً كـ Blob في الذاكرة (fetch + URL.createObjectURL) قبل تمريره.
+  // هذا يحوّله لمصدر "محلي" من منظور المتصفح، فيتجاوز قيد Cross-Origin Worker
+  // نهائياً دون الحاجة لاستضافة أي ملف فعلياً على سيرفرك.
   async function ensureFFmpegLoaded(){
     if (ffmpegLoaded) return;
     const { FFmpeg } = window.FFmpegWASM;
@@ -148,11 +151,13 @@
     const coreBaseURL   = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
     const ffmpegBaseURL = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd';
 
-    await ffmpeg.load({
-      coreURL: await toBlobURL(`${coreBaseURL}/ffmpeg-core.js`, 'text/javascript'),
-      wasmURL: await toBlobURL(`${coreBaseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-      classWorkerURL: await toBlobURL(`${ffmpegBaseURL}/814.ffmpeg.js`, 'text/javascript'),
-    });
+    const [coreURL, wasmURL, classWorkerURL] = await Promise.all([
+      toBlobURL(`${coreBaseURL}/ffmpeg-core.js`, 'text/javascript'),
+      toBlobURL(`${coreBaseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+      toBlobURL(`${ffmpegBaseURL}/814.ffmpeg.js`, 'text/javascript'),
+    ]);
+
+    await ffmpeg.load({ coreURL, wasmURL, classWorkerURL });
 
     ffmpegLoaded = true;
   }
