@@ -58,7 +58,6 @@
     if (text) progressStatus.textContent = text;
   }
 
-  // ---- رفع الملف (سحب وإفلات + اختيار) ----
   dropzone.addEventListener('click', () => fileInput.click());
   ['dragenter','dragover'].forEach(evt => dropzone.addEventListener(evt, e => {
     e.preventDefault(); e.stopPropagation(); dropzone.classList.add('drag-active');
@@ -90,7 +89,6 @@
     hide(fileInfo); hide(settingsPanel); hide(progressSection); hide(downloadSection);
   }
 
-  // ---- أزرار الإعدادات ----
   resButtons.forEach(btn => btn.addEventListener('click', () => {
     resButtons.forEach(b => b.classList.remove('active','border-sky-400','bg-sky-400/10','text-sky-300'));
     btn.classList.add('active','border-sky-400','bg-sky-400/10','text-sky-300');
@@ -127,17 +125,13 @@
   updateSummary();
 
   // ---- تحميل FFmpeg.wasm ----
-  // كل الملفات (core.js / core.wasm / الـ worker الداخلي) يجب تحميلها
-  // كـ Blob URL محلي، وإلا يرفضها المتصفح بسبب قيود Cross-Origin على الـ Worker.
+  // classWorkerURL يُمرَّر داخل load()، وليس داخل constructor — هذا هو التصحيح الجوهري.
   async function ensureFFmpegLoaded(){
     if (ffmpegLoaded) return;
     const { FFmpeg } = window.FFmpegWASM;
     const { toBlobURL } = window.FFmpegUtil;
 
-    const ffmpegBase = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd';
-    const classWorkerURL = await toBlobURL(`${ffmpegBase}/814.ffmpeg.js`, 'text/javascript');
-
-    ffmpeg = new FFmpeg({ classWorkerURL });
+    ffmpeg = new FFmpeg();
 
     ffmpeg.on('log', ({ message }) => {
       console.log('[ffmpeg]', message);
@@ -150,15 +144,19 @@
     });
 
     setProgress(0, 'جاري تحميل محرك المعالجة (أول مرة فقط)…');
-    const coreBaseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+
+    const coreBaseURL   = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+    const ffmpegBaseURL = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd';
+
     await ffmpeg.load({
       coreURL: await toBlobURL(`${coreBaseURL}/ffmpeg-core.js`, 'text/javascript'),
       wasmURL: await toBlobURL(`${coreBaseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+      classWorkerURL: await toBlobURL(`${ffmpegBaseURL}/814.ffmpeg.js`, 'text/javascript'),
     });
+
     ffmpegLoaded = true;
   }
 
-  // ---- بناء سلسلة الفلاتر ----
   function buildFilterChain(s){
     const filters = [];
     const [w,h] = s.resolution.split('x');
@@ -198,7 +196,6 @@
     ];
   }
 
-  // ---- تنفيذ المعالجة ----
   processBtn.addEventListener('click', async () => {
     if (!selectedFile) return;
     const s = { ...state };
@@ -247,7 +244,7 @@
     } catch (err) {
       console.error('Processing error:', err);
       const detail = (err && (err.message || err.toString())) || 'خطأ غير معروف';
-      alert(`صار خطأ أثناء المعالجة:\n\n${detail}\n\nجرّب متصفح Chrome أو Edge، أو ملف أصغر، أو أوقف تفعيل Motion Blur وحاول مجدداً.`);
+      alert(`صار خطأ أثناء المعالجة:\n\n${detail}`);
       hide(progressSection); show(settingsPanel);
     } finally {
       processBtn.disabled = false;
