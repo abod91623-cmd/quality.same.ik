@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>محسّن فيديو تيك توك — معالجة محلية بالكامل</title>
+<meta name="description" content="حسّن جودة فيديوهاتك لتيك توك بالكامل من متصفحك، بدون رفع أي ملف لأي سيرفر." />
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: { accentSky: '#38bdf8', accentEmerald: '#34d399' },
+        boxShadow: {
+          glowSky: '0 0 25px rgba(56,189,248,.35)',
+          glowEmerald: '0 0 25px rgba(52,211,153,.35)'
+        },
+        fontFamily: { sans: ['Tajawal','Inter','ui-sans-serif','system-ui','sans-serif'] }
+      }
+    }
+  }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+
+<!-- FFmpeg.wasm (single-thread core — لا يحتاج أي إعدادات سيرفر خاصة، متوافق مع أي استضافة ثابتة) -->
+<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
+<script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
+</head>
+
+<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen selection:bg-sky-500/30">
+
+<header class="border-b border-slate-800/80 sticky top-0 z-50 bg-slate-950/80 backdrop-blur-md">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-400 to-emerald-400 flex items-center justify-center shadow-glowSky">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-950" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M8 5v14l11-7z"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-lg sm:text-xl font-extrabold tracking-tight text-white leading-none">محسّن <span class="text-sky-400">تيك توك</span></h1>
+        <p class="text-[11px] text-slate-500 font-medium">معالجة محلية 100% — فيديوك ما يطلع من جهازك</p>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-14">
+
+  <section class="text-center mb-12">
+    <span class="inline-block text-xs font-bold tracking-wider text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 rounded-full px-3 py-1 mb-4">
+      يعمل بالكامل داخل متصفحك — بدون رفع لأي سيرفر
+    </span>
+    <h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white mb-4">
+      جهّز فيديوهاتك لتيك توك <span class="text-sky-400">بأعلى جودة</span>
+    </h2>
+    <p class="text-slate-400 max-w-2xl mx-auto text-sm sm:text-base">
+      إعادة ترميز بجودة عالية، فريمريت مضبوط، ومؤثر Motion Blur سينمائي — كل هذا يشتغل محلياً على جهازك باستخدام WebAssembly.
+    </p>
+  </section>
+
+  <!-- منطقة الرفع -->
+  <section id="upload-section">
+    <div id="dropzone"
+         class="group relative rounded-2xl border-2 border-dashed border-slate-700 hover:border-sky-400/70 bg-slate-900/40 hover:bg-slate-900/70 transition-all duration-300 cursor-pointer p-10 sm:p-16 text-center">
+      <input id="fileInput" type="file" accept="video/*" class="hidden" />
+      <div class="flex flex-col items-center gap-4 pointer-events-none">
+        <div class="w-16 h-16 rounded-full bg-slate-800 group-hover:bg-sky-500/10 flex items-center justify-center transition-colors border border-slate-700 group-hover:border-sky-400/50 group-hover:shadow-glowSky">
+          <svg class="w-7 h-7 text-slate-400 group-hover:text-sky-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+          </svg>
+        </div>
+        <div>
+          <p class="text-base sm:text-lg font-semibold text-white">اسحب وأفلت الفيديو هنا، أو اضغط للاختيار</p>
+          <p class="text-slate-500 text-sm mt-1">MP4, MOV, WebM, MKV — أي دقة أو فريمريت</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="fileInfo" class="hidden mt-4 flex items-center justify-between gap-4 bg-slate-900/60 border border-slate-800 rounded-xl px-4 py-3">
+      <div class="flex items-center gap-3 min-w-0">
+        <svg class="w-5 h-5 text-sky-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+        </svg>
+        <div class="min-w-0">
+          <p id="fileName" class="text-sm font-semibold text-white truncate"></p>
+          <p id="fileMeta" class="text-xs text-slate-500"></p>
+        </div>
+      </div>
+      <button id="removeFile" class="text-xs font-semibold text-slate-400 hover:text-red-400 transition-colors shrink-0">إزالة</button>
+    </div>
+  </section>
+
+  <!-- لوحة الإعدادات -->
+  <section id="settingsPanel" class="hidden mt-10">
+    <h3 class="text-lg font-bold text-white mb-5">إعدادات التصدير</h3>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+      <!-- الدقة -->
+      <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-5">
+        <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">الدقة (Resolution)</label>
+        <div class="grid grid-cols-2 gap-2 mt-3">
+          <button data-res="1080x1920" class="res-btn active text-sm font-semibold py-2.5 rounded-lg border border-sky-400 bg-sky-400/10 text-sky-300">1080p (1080×1920)</button>
+          <button data-res="720x1280" class="res-btn text-sm font-semibold py-2.5 rounded-lg border border-slate-700 bg-slate-950 text-slate-300 hover:border-sky-400/50">720p (720×1280)</button>
+        </div>
+      </div>
+
+      <!-- الفريمريت -->
+      <div class="bg-slate-900/60 border border-slate-800 rounded-xl p-5">
+        <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">معدل الإطارات (FPS)</label>
+        <div class="grid grid-cols-2 gap-2 mt-3">
+          <button data-fps="60" class="fps-btn active text-sm font-semibold py-2.5 rounded-lg border border-emerald-400 bg-emerald-400/10 text-emerald-300">60 FPS</button>
+          <button data-fps="30" class="fps-btn text-sm font-semibold py-2.5 rounded-lg border border-slate-700 bg-slate-950 text-slate-300 hover:border-emerald-400/50">30 FPS</button>
+        </div>
+      </div>
+
+      <!-- Motion Blur -->
+      <div class="md:col-span-2 bg-slate-900/60 border border-slate-800 rounded-xl p-5">
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">تأثير الموشن بلور (Motion Blur)</label>
+          <button id="motionBlurToggle" type="button" class="relative inline-flex h-6 w-11 items-center rounded-full bg-slate-700 transition-colors">
+            <span id="motionBlurKnob" class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-1"></span>
+          </button>
+        </div>
+        <p class="text-xs text-slate-500 mt-2 mb-3">يدمج الإطارات المتتالية لإعطاء طابع سينمائي احترافي للحركة.</p>
+        <div id="motionBlurIntensityWrap" class="opacity-40 pointer-events-none transition-opacity grid grid-cols-3 gap-2">
+          <button data-intensity="light" class="intensity-btn text-xs font-semibold py-2 rounded-lg border border-slate-700 bg-slate-950 text-slate-300 hover:border-sky-400/50">خفيف</button>
+          <button data-intensity="medium" class="intensity-btn active text-xs font-semibold py-2 rounded-lg border border-sky-400 bg-sky-400/10 text-sky-300">وسط</button>
+          <button data-intensity="strong" class="intensity-btn text-xs font-semibold py-2 rounded-lg border border-slate-700 bg-slate-950 text-slate-300 hover:border-sky-400/50">قوي</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 bg-gradient-to-r from-sky-500/10 to-emerald-500/10 border border-sky-500/20 rounded-xl p-5">
+      <p id="settingsSummary" class="text-sm text-slate-300 font-medium"></p>
+      <button id="processBtn"
+              class="w-full sm:w-auto shrink-0 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-sky-400 to-emerald-400 text-slate-950 font-bold text-sm px-6 py-3 rounded-xl hover:shadow-glowSky transition-all active:scale-95">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        ابدأ المعالجة
+      </button>
+    </div>
+  </section>
+
+  <!-- شريط التقدم -->
+  <section id="progressSection" class="hidden mt-10">
+    <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6 sm:p-8">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <svg class="w-4 h-4 text-sky-400 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+          </svg>
+          جاري معالجة الفيديو…
+        </h3>
+        <span id="progressPercent" class="text-sm font-bold text-sky-400">0%</span>
+      </div>
+      <div class="w-full h-3 bg-slate-800 rounded-full overflow-hidden">
+        <div id="progressBar" class="h-full bg-gradient-to-r from-sky-400 to-emerald-400 rounded-full transition-all duration-300" style="width:0%"></div>
+      </div>
+      <p id="progressStatus" class="text-xs text-slate-500 mt-3 font-mono truncate" dir="ltr">جاري تحميل محرك المعالجة…</p>
+    </div>
+  </section>
+
+  <!-- التحميل -->
+  <section id="downloadSection" class="hidden mt-10">
+    <div class="bg-slate-900/60 border border-emerald-500/30 rounded-2xl p-6 sm:p-8 shadow-glowEmerald">
+      <div class="flex flex-col sm:flex-row items-center gap-6">
+        <video id="outputPreview" controls class="w-40 sm:w-48 rounded-xl border border-slate-800 bg-black shrink-0"></video>
+        <div class="flex-1 text-center sm:text-right">
+          <div class="inline-flex items-center gap-2 text-emerald-400 font-bold text-sm mb-2">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12Zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clip-rule="evenodd" /></svg>
+            اكتملت المعالجة بنجاح
+          </div>
+          <p id="outputMeta" class="text-sm text-slate-400 mb-4"></p>
+          <div class="flex flex-col sm:flex-row gap-3 justify-center sm:justify-start">
+            <a id="downloadBtn" download="tiktok-optimized.mp4"
+               class="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-sky-400 to-emerald-400 text-slate-950 font-bold text-sm px-6 py-3 rounded-xl hover:shadow-glowEmerald transition-all active:scale-95">
+              تحميل الفيديو
+            </a>
+            <button id="processAnotherBtn"
+               class="inline-flex items-center justify-center gap-2 border border-slate-700 hover:border-sky-400/50 text-slate-300 font-semibold text-sm px-6 py-3 rounded-xl transition-all">
+              معالجة فيديو آخر
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="border-t border-slate-800/80 mt-16">
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 py-8 text-center text-xs text-slate-600">
+    يعمل بالكامل على جهازك — لا يتم رفع أي فيديو لأي سيرفر
+  </div>
+</footer>
+
+<script src="app.js" defer></script>
+</body>
+</html>
