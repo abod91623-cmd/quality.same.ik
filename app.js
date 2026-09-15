@@ -133,7 +133,10 @@
     const { toBlobURL } = window.FFmpegUtil;
     ffmpeg = new FFmpeg();
 
-    ffmpeg.on('log', ({ message }) => { progressStatus.textContent = message; });
+    ffmpeg.on('log', ({ message }) => {
+      console.log('[ffmpeg]', message);
+      progressStatus.textContent = message;
+    });
     ffmpeg.on('progress', ({ progress }) => {
       if (typeof progress === 'number' && !Number.isNaN(progress)) {
         setProgress(Math.min(100, Math.max(0, progress*100)), progressStatus.textContent);
@@ -150,6 +153,9 @@
   }
 
   // ---- بناء سلسلة الفلاتر ----
+  // ملاحظة مهمة: لا نضع علامات اقتباس حول قيمة weights لأن الأمر
+  // يُرسل مباشرة كمصفوفة نصوص (بدون shell) — أي علامة اقتباس هنا
+  // تُعتبر جزءاً حرفياً من النص وتكسر تفسير ffmpeg للفلتر.
   function buildFilterChain(s){
     const filters = [];
     const [w,h] = s.resolution.split('x');
@@ -159,7 +165,7 @@
     if (s.motionBlur){
       const frames = MOTION_BLUR_FRAMES[s.motionBlurLevel] || 3;
       const weights = frames === 2 ? '1 1' : frames === 3 ? '1 2 1' : '1 2 3 2 1';
-      filters.push(`tmix=frames=${frames}:weights='${weights}'`);
+      filters.push(`tmix=frames=${frames}:weights=${weights}`); // بدون اقتباس
     }
     filters.push('format=yuv420p');
     return filters.join(',');
@@ -211,7 +217,9 @@
       await ffmpeg.writeFile(inputName, inputData);
 
       setProgress(5, 'بدء المعالجة…');
-      await ffmpeg.exec(buildFFmpegArgs(inputName, outputName, s));
+      const args = buildFFmpegArgs(inputName, outputName, s);
+      console.log('[ffmpeg args]', args.join(' '));
+      await ffmpeg.exec(args);
 
       setProgress(97, 'جاري إنهاء الملف…');
       const outputData = await ffmpeg.readFile(outputName);
@@ -234,8 +242,9 @@
       downloadSection.scrollIntoView({ behavior:'smooth', block:'nearest' });
 
     } catch (err) {
-      console.error(err);
-      alert('صار خطأ أثناء المعالجة. جرّب متصفح Chrome أو Edge، أو ملف أصغر.');
+      console.error('Processing error:', err);
+      const detail = (err && (err.message || err.toString())) || 'خطأ غير معروف';
+      alert(`صار خطأ أثناء المعالجة:\n\n${detail}\n\nجرّب متصفح Chrome أو Edge، أو ملف أصغر، أو أوقف تفعيل Motion Blur وحاول مجدداً.`);
       hide(progressSection); show(settingsPanel);
     } finally {
       processBtn.disabled = false;
